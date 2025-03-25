@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_CREDENTIALS_ID = 'sai1235689ijhgvcf'
-        IMAGE_NAME = 'sai1235689ijhgvcf/task4'
-    }
-
     stages {
         stage('Checkout Code') {
             steps {
@@ -15,39 +10,33 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh 'mvn clean install'
+                bat 'mvn clean install'  // Use bat for Windows
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    withDockerRegistry([credentialsId: DOCKER_CREDENTIALS_ID]) {
-                        sh "docker build -t $IMAGE_NAME ."
-                    }
-                }
+                bat 'docker build -t my-task-app .'  // Windows command
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                script {
-                    withDockerRegistry([credentialsId: DOCKER_CREDENTIALS_ID]) {
-                        sh "docker push $IMAGE_NAME"
-                    }
-                }
+                bat 'docker tag my-task-app mydockerhubusername/my-task-app:latest'
+                bat 'docker push mydockerhubusername/my-task-app:latest'
             }
         }
 
-        
+        stage('Deployment') {
+            steps {
+                echo '🚀 Deployment Successful!'
+            }
+        }
     }
 
     post {
-        success {
-            echo "✅ Deployment Successful!"
-        }
         failure {
-            echo "❌ Deployment Failed!"
+            echo '❌ Deployment Failed!'
         }
     }
 }
