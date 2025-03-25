@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('ca163650-6033-4347-9b66-85f26163fe2b') // Jenkins credentials ID
+        DOCKER_IMAGE = "sai1235689ijhgvcf/task4:latest"
     }
 
     stages {
@@ -12,38 +12,41 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
+        stage('Pull Docker Image') {
             steps {
-                bat 'mvn clean install'
+                bat 'docker pull %DOCKER_IMAGE%'
             }
         }
 
-        stage('Docker Login') {
+        stage('Stop & Remove Old Container') {
             steps {
-                bat 'docker login -u %DOCKER_HUB_CREDENTIALS_USR% -p %DOCKER_HUB_CREDENTIALS_PSW%'
+                script {
+                    def containerExists = bat(script: "docker ps -a -q --filter name=my-task-app", returnStatus: true)
+                    if (containerExists == 0) {
+                        bat 'docker stop my-task-app'
+                        bat 'docker rm my-task-app'
+                    }
+                }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Run New Container') {
             steps {
-                bat 'docker build -t mydockerhubusername/my-task-app:latest .'
+                bat 'docker run -d -p 8080:8080 --name my-task-app %DOCKER_IMAGE%'
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Verify Deployment') {
             steps {
-                bat 'docker push mydockerhubusername/my-task-app:latest'
-            }
-        }
-
-        stage('Deployment') {
-            steps {
-                echo '🚀 Deployment Successful!'
+                bat 'docker ps'
             }
         }
     }
 
     post {
+        success {
+            echo '🚀 Deployment Successful!'
+        }
         failure {
             echo '❌ Deployment Failed!'
         }
