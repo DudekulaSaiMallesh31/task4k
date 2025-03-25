@@ -1,23 +1,53 @@
 pipeline {
     agent any
+
     environment {
-        DOCKER_IMAGE = 'sai1235689ijhgvcf/taskk-springboot-app:latest'
+        DOCKER_CREDENTIALS_ID = 'sai1235689ijhgvcf'
+        IMAGE_NAME = 'sai1235689ijhgvcf/task4'
     }
+
     stages {
-        stage('Pull Docker Image') {
+        stage('Checkout Code') {
             steps {
-                sh "docker pull $DOCKER_IMAGE"
+                git 'https://github.com/DudekulaSaiMallesh31/task4k.git'
             }
         }
-        stage('Run Tests') {
+
+        stage('Build & Test') {
             steps {
-                sh "docker run $DOCKER_IMAGE ./run-tests.sh"
+                sh 'mvn clean install'
             }
         }
-        stage('Clean Up') {
+
+        stage('Build Docker Image') {
             steps {
-                sh "docker system prune -f"
+                script {
+                    withDockerRegistry([credentialsId: DOCKER_CREDENTIALS_ID]) {
+                        sh "docker build -t $IMAGE_NAME ."
+                    }
+                }
             }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    withDockerRegistry([credentialsId: DOCKER_CREDENTIALS_ID]) {
+                        sh "docker push $IMAGE_NAME"
+                    }
+                }
+            }
+        }
+
+        
+    }
+
+    post {
+        success {
+            echo "✅ Deployment Successful!"
+        }
+        failure {
+            echo "❌ Deployment Failed!"
         }
     }
 }
