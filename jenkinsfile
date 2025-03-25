@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_HUB_CREDENTIALS = credentials('ca163650-6033-4347-9b66-85f26163fe2b') // Jenkins credentials ID
+    }
+
     stages {
         stage('Checkout Code') {
             steps {
@@ -10,19 +14,24 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                bat 'mvn clean install'  // Use bat for Windows
+                bat 'mvn clean install'
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                bat 'docker login -u %DOCKER_HUB_CREDENTIALS_USR% -p %DOCKER_HUB_CREDENTIALS_PSW%'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                bat 'docker build -t my-task-app .'  // Windows command
+                bat 'docker build -t mydockerhubusername/my-task-app:latest .'
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                bat 'docker tag my-task-app mydockerhubusername/my-task-app:latest'
                 bat 'docker push mydockerhubusername/my-task-app:latest'
             }
         }
