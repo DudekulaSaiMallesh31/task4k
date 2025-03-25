@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "mydockerhubusername/my-task-app:latest"
+        DOCKER_IMAGE = "sai1235689ijhgvcf/task4:latest"
     }
 
     stages {
@@ -12,19 +12,33 @@ pipeline {
             }
         }
 
-        stage('Pull Docker Image') {
+        stage('Build Docker Image') {
             steps {
-                bat 'docker pull %DOCKER_IMAGE%'
+                bat 'docker build -t %DOCKER_IMAGE% .'
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([string(credentialsId: 'e6e2460e-825a-433c-8df9-4eb76e32c55b', variable: 'DOCKER_PASSWORD')]) {
+                    bat 'echo %DOCKER_PASSWORD% | docker login -u sai1235689ijhgvcf --password-stdin'
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                bat 'docker push %DOCKER_IMAGE%'
             }
         }
 
         stage('Stop & Remove Old Container') {
             steps {
                 script {
-                    def containerExists = bat(script: 'docker ps -a -q --filter name=my-task-app', returnStdout: true).trim()
+                    def containerExists = bat(script: 'docker ps -a -q --filter name=task4-app', returnStdout: true).trim()
                     if (containerExists) {
-                        bat 'docker stop my-task-app || echo "Container not running"'
-                        bat 'docker rm my-task-app || echo "Container already removed"'
+                        bat 'docker stop task4-app || echo "Container not running"'
+                        bat 'docker rm task4-app || echo "Container already removed"'
                     } else {
                         echo 'No existing container found. Skipping stop and remove steps.'
                     }
@@ -34,7 +48,7 @@ pipeline {
 
         stage('Run New Container') {
             steps {
-                bat 'docker run -d -p 8080:8080 --name my-task-app %DOCKER_IMAGE%'
+                bat 'docker run -d -p 8080:8080 --name task4-app %DOCKER_IMAGE%'
             }
         }
 
@@ -47,10 +61,10 @@ pipeline {
 
     post {
         success {
-            echo '🚀 Deployment Successful!'
+            echo '🚀 Deployment Successful! Your app is running at http://localhost:8080'
         }
         failure {
-            echo '❌ Deployment Failed!'
+            echo '❌ Deployment Failed! Check logs for details.'
         }
     }
 }
