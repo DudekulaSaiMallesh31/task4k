@@ -1,0 +1,23 @@
+pipeline {
+    agent any
+    environment {
+        DOCKER_IMAGE = 'sai1235689ijhgvcf/taskk-springboot-app:latest'
+    }
+    stages {
+        stage('Pull Docker Image') {
+            steps {
+                sh "docker pull $DOCKER_IMAGE"
+            }
+        }
+        stage('Run Tests') {
+            steps {
+                sh "docker run $DOCKER_IMAGE ./run-tests.sh"
+            }
+        }
+        stage('Clean Up') {
+            steps {
+                sh "docker system prune -f"
+            }
+        }
+    }
+}
