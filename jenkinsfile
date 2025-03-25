@@ -9,15 +9,22 @@ pipeline {
     stages {
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'e6e2460e-825a-433c-8df9-4eb76e32c55b', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    bat 'echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USER% --password-stdin'
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'e6e2460e-825a-433c-8df9-4eb76e32c55b', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        bat 'echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USER% --password-stdin'
+                    }
                 }
             }
         }
 
         stage('Pull Docker Image') {
             steps {
-                bat 'docker pull %DOCKER_IMAGE%'
+                script {
+                    def result = bat(script: 'docker pull %DOCKER_IMAGE%', returnStatus: true)
+                    if (result != 0) {
+                        error "❌ Docker image pull failed! Check your image name and credentials."
+                    }
+                }
             }
         }
 
@@ -29,7 +36,7 @@ pipeline {
                         bat 'docker stop %CONTAINER_NAME% || echo "Container not running"'
                         bat 'docker rm %CONTAINER_NAME% || echo "Container already removed"'
                     } else {
-                        echo 'No existing container found. Skipping stop and remove steps.'
+                        echo '✅ No existing container found. Proceeding...'
                     }
                 }
             }
@@ -37,13 +44,21 @@ pipeline {
 
         stage('Run New Container') {
             steps {
-                bat 'docker run -d -p 8080:8080 --name %CONTAINER_NAME% %DOCKER_IMAGE%'
+                script {
+                    def result = bat(script: 'docker run -d -p 8080:8080 --name %CONTAINER_NAME% %DOCKER_IMAGE%', returnStatus: true)
+                    if (result != 0) {
+                        error "❌ Failed to start container! Check Docker logs."
+                    }
+                }
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                bat 'docker ps'
+                script {
+                    bat 'docker ps'
+                    echo '✅ Deployment verification complete!'
+                }
             }
         }
     }
