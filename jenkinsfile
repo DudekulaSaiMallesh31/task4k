@@ -3,42 +3,31 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "sai1235689ijhgvcf/task4:latest"
+        CONTAINER_NAME = "task4-app"
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                git 'https://github.com/DudekulaSaiMallesh31/task4k.git'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                bat 'docker build -t %DOCKER_IMAGE% .'
-            }
-        }
-
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([string(credentialsId: 'e6e2460e-825a-433c-8df9-4eb76e32c55b', variable: 'DOCKER_PASSWORD')]) {
+                withCredentials([string(credentialsId: 'docker-hub-password', variable: 'DOCKER_PASSWORD')]) {
                     bat 'echo %DOCKER_PASSWORD% | docker login -u sai1235689ijhgvcf --password-stdin'
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Pull Docker Image') {
             steps {
-                bat 'docker push %DOCKER_IMAGE%'
+                bat 'docker pull %DOCKER_IMAGE%'
             }
         }
 
         stage('Stop & Remove Old Container') {
             steps {
                 script {
-                    def containerExists = bat(script: 'docker ps -a -q --filter name=task4-app', returnStdout: true).trim()
+                    def containerExists = bat(script: 'docker ps -a -q --filter name=%CONTAINER_NAME%', returnStdout: true).trim()
                     if (containerExists) {
-                        bat 'docker stop task4-app || echo "Container not running"'
-                        bat 'docker rm task4-app || echo "Container already removed"'
+                        bat 'docker stop %CONTAINER_NAME% || echo "Container not running"'
+                        bat 'docker rm %CONTAINER_NAME% || echo "Container already removed"'
                     } else {
                         echo 'No existing container found. Skipping stop and remove steps.'
                     }
@@ -48,7 +37,7 @@ pipeline {
 
         stage('Run New Container') {
             steps {
-                bat 'docker run -d -p 8080:8080 --name task4-app %DOCKER_IMAGE%'
+                bat 'docker run -d -p 8080:8080 --name %CONTAINER_NAME% %DOCKER_IMAGE%'
             }
         }
 
