@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "sai1235689ijhgvcf/task4:latest"
+        DOCKER_IMAGE = "mydockerhubusername/my-task-app:latest"
     }
 
     stages {
@@ -21,10 +21,12 @@ pipeline {
         stage('Stop & Remove Old Container') {
             steps {
                 script {
-                    def containerExists = bat(script: "docker ps -a -q --filter name=my-task-app", returnStatus: true)
-                    if (containerExists == 0) {
-                        bat 'docker stop my-task-app'
-                        bat 'docker rm my-task-app'
+                    def containerExists = bat(script: 'docker ps -a -q --filter name=my-task-app', returnStdout: true).trim()
+                    if (containerExists) {
+                        bat 'docker stop my-task-app || echo "Container not running"'
+                        bat 'docker rm my-task-app || echo "Container already removed"'
+                    } else {
+                        echo 'No existing container found. Skipping stop and remove steps.'
                     }
                 }
             }
